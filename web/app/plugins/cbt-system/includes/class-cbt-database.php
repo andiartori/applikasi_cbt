@@ -64,8 +64,10 @@ class CBT_Database
         //SQL for cbt_attempts table
         $sql_attempts = "CREATE TABLE $attempts_table (
         id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-        student_id BIGINT(20) UNSIGNED NOT NULL,
         exam_id BIGINT(20) UNSIGNED NOT NULL,
+        student_name VARCHAR(255) NOT NULL,
+        student_class VARCHAR(100) NOT NULL,
+        student_nisn VARCHAR(20) NOT NULL,
         start_time DATETIME NOT NULL,
         end_time DATETIME,
         score DECIMAL(5,2) DEFAULT NULL,
@@ -78,7 +80,7 @@ class CBT_Database
         KEY student_idx (student_id),
         KEY exam_idx (exam_id),
         KEY submission_idx (is_submitted),
-        UNIQUE KEY student_exam_unique (student_id, exam_id)
+        UNIQUE KEY nisn_exam_unique (student_nisn, exam_id)
         ) $charset_collate;";
 
         //SQL for cbt_answers table
