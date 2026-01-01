@@ -19,6 +19,7 @@ define( 'CBT_SYSTEM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CBT_SYSTEM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 //Include Required Files
+require_once CBT_SYSTEM_PLUGIN_DIR . 'admin/class-cbt-admin.php';
 require_once CBT_SYSTEM_PLUGIN_DIR . 'includes/class-cbt-database.php';
 require_once CBT_SYSTEM_PLUGIN_DIR . 'includes/class-cbt-roles.php';
 require_once CBT_SYSTEM_PLUGIN_DIR . 'includes/class-cbt-activator.php';
@@ -71,4 +72,9 @@ add_action('init', function() {
         'menu_icon' => 'dashicons-clipboard',
         'supports'      => ['title'],
     ]);
+
+    //Initialize Admin
+    if(is_admin()) {
+        CBT_Admin::init();
+    }   
 });

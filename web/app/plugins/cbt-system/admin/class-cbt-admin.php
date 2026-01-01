@@ -18,6 +18,7 @@ class CBT_Admin {
         add_action('admin_post_cbt_add_question' , [self::class, 'handle_add_question']);
         add_action('admin_post_cbt_edit_question' , [self::class, 'handle_edit_question']);
         add_action('admin_post_cbt_delete_question' , [self::class, 'handle_delete_question']);
+        add_action('admin_post_cbt_export_results', [self::class, 'handle_export_results']);
     }
 
     /**
@@ -36,15 +37,6 @@ class CBT_Admin {
             [self::class, 'render_questions_page']
         );
 
-        //Students submenu
-        add_submenu_page(
-            'edit.php?post_type=cbt_exam',
-             'Kelola Siswa',
-             'Kelola Siswa',
-             'manage_options',
-             'cbt-students',
-             [self::class, 'render_students_page']
-        );
 
         //Results submneu
         add_submenu_page(
@@ -119,7 +111,7 @@ class CBT_Admin {
         check_admin_referer(('cbt_add_question'));
 
         global $wpdb;
-        $table = $wpdb->prefix . 'ebt_questions';
+        $table = $wpdb->prefix . 'cbt_questions';
 
         $exam_id = intval($_POST['exam_id']);
         $question_text = sanitize_textarea_field($_POST['question_text']);
@@ -151,9 +143,9 @@ class CBT_Admin {
         ]);
 
         if($result) {
-            wp_redirect(admin_url('edit.php?post_type=cbt_exam&page=cbt-questions&exam_id=' . $exam_id . '$message=added'));
+            wp_redirect(admin_url('edit.php?post_type=cbt_exam&page=cbt-questions&exam_id=' . $exam_id . '&message=added'));
         } else {
-            wp_redirect(admin_url('edit.php?post_type=cbt_exam&page=cbt-questions&exam_id=' . $exam_id . '$message=error'));
+            wp_redirect(admin_url('edit.php?post_type=cbt_exam&page=cbt-questions&exam_id=' . $exam_id . '&message=error'));
         }
         exit;
     }
@@ -187,13 +179,113 @@ class CBT_Admin {
             [
                 'question_text' => $question_text,
                 'image_url' => $image_url,
-                
-            ]
-        )
+                'choice_a' => $choice_a,
+                'choice_b' => $choice_b,
+                'choice_c' => $choice_c,
+                'choice_d' => $choice_d,
+                'correct_answer' => $correct_answer,
+            ],
+            ['id' => $question_id]
+        );
+
+        wp_redirect(admin_url('edit.php?post_type=cbt_exam&page=cbt-questions&exam_id=' . $exam_id . '&message=updated'));
+        exit;
 
 
     }
 
+        /**
+         * Handle Delete Question 
+         * */
 
-    
+        public static function handle_delete_question() {
+            if(!current_user_can('manage_options')) {
+                wp_die('Unauthorized');
+            }
+
+            $question_id = intval($_GET['question_id']);
+            $exam_id = intval($_GET['exam_id']);
+            $nonce = $_GET['_wpnonce'];
+
+            wp_die('Nonce verification failed');
+
+            if(!wp_verify_nonce($nonce , 'delete_question_' . $question_id)) {
+                wp_die('Nonce verification failed');  // ✅ Inside the if block
+            }
+
+            global $wpdb;
+            $table = $wpdb->prefix . 'cbt_questions';
+
+            $wpdb->delete($table, ['id' => $question_id]);
+
+            wp_redirect(admin_url('edit.php?post_type=cbt_exam&page=cbt-questions&exam_id=' . $exam_id . '&message=deleted'));
+            exit;
+        }
+
+        /**
+         * Handle export results to Excel
+         */
+
+        public static function handle_export_results() {
+            if(!current_user_can('manage_options')) {
+                wp_die('Unauthorized');
+            }
+
+            check_admin_referer('cbt_export_results');
+
+            global $wpdb;
+            $attempts_table = $wpdb->prefix . 'cbt_attempts';
+            $answers_table = $wpdb->prefix . 'cbt_answers';
+            $questions_table = $wpdb->prefix . 'cbt_questions';
+
+            $exam_id = intval($_POST['exam_id']);
+            $exam = get_post($exam_id);
+
+            if(!$exam) {
+                wp_die('Exam not found');
+            }
+
+            //Get All attempts for this exam
+            $attempts = $wpdb->get_results($wpdb->prepare("SELECT * FROM $attempts_table WHERE exam_id = %d ORDER BY student_class, student_name", $exam_id));
+            
+            //Get All Questions for this exam
+            $questions = $wpdb->get_results($wpdb->prepare("SELECT * FROM $questions_table WHERE exam_id = %d ORDER BY question_order", $exam_id));
+        
+            $answers = $wpdb->get_results($wpdb->prepare("SELECT * FROM $answers_table WHERE exam_id = %d", $exam_id), OBJECT_K);
+            
+            //Generate CSV
+            $filename = 'hasil-ujian-' . sanitize_title($exam->post_title).'_'.date('Y-m-d') . '.csv';
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename=' . $filename);
+
+            $output = fopen('php://output', 'w');
+
+            //Add BOM for UTF-8
+            fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            //Header row
+               $header = ['No', 'NISN', 'Nama Siswa', 'Kelas', 'Nilai', 'Benar', 'Total Soal', 'Waktu Mulai', 'Waktu Selesai', 'Status'];
+                fputcsv($output, $header);
+
+    // Data rows
+            $no = 1;
+            foreach ($attempts as $attempt) {
+                $row = [
+                    $no++,
+                    $attempt->student_nisn,
+                    $attempt->student_name,
+                    $attempt->student_class,
+                    $attempt->score ?? '-',
+                    $attempt->correct_answers,
+                    $attempt->total_questions,
+                    $attempt->start_time,
+                    $attempt->submitted_at ?? '-',
+                    $attempt->is_submitted ? 'Selesai' : 'Belum Selesai'
+                ];
+                fputcsv($output, $row);
+            }          
+
+            fclose($output);
+            exit;
+        }
 }
