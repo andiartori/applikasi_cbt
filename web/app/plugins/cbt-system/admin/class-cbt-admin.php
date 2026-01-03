@@ -64,7 +64,7 @@ class CBT_Admin {
 
         wp_enqueue_script(
             'cbt-admin-script',
-            CBT_SYSTEM_PLUGIN_URL . 'assets/js/admin 1.js',
+            CBT_SYSTEM_PLUGIN_URL . 'assets/js/admin.js',
             ['jquery'],
             CBT_SYSTEM_VERSION,
             true 
