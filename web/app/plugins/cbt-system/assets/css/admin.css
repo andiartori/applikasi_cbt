@@ -1,0 +1,39 @@
+/* CBT Admin Styles */
+
+.cbt-stats-box {
+    background: #fff;
+    padding: 15px 25px;
+    border-left: 4px solid #0073aa;
+    margin-right: 15px;
+    display: inline-block;
+}
+
+.cbt-stats-box strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+}
+
+.cbt-stats-box span {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* Form improvements */
+.form-table textarea {
+    width: 100%;
+}
+
+/* Image preview */
+#image_preview img {
+    max-width: 300px;
+    max-height: 200px;
+    border: 1px solid #ddd;
+    padding: 5px;
+    margin-top: 10px;
+}
+
+/* Required field indicator */
+.required {
+    color: #dc3232;
+}
