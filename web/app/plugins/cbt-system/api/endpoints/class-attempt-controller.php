@@ -94,7 +94,50 @@ class CBT_Attempt_Controller {
  * Post /submit - Submit exam and calculate score
  */
 
+public static function submit_exam($request) {
+    global $wpdb;
 
+    $attempt_id = $request->get_param('attempt_id');
+
+    $attempts_table = $wpdb->prefix . 'cbt_attempts';
+    $answers_table = $wpdb->prefix . 'cbt_answers';
+    $questions_table = $wpdb->prefix . 'cbt_questions';
+
+    $attempt = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM $attempts_table WHERE id = %d",
+        $attempt_id
+    ));
+
+    if (!$attempt) {
+        return new WP_Error('invalid_attempt', 'Attempt tidak ditemukan', array('status' => 404));
+    }
+
+    if ($attempt->is_submitted) {
+        return new WP_Error('already_submitted', 'Ujian sudah disubmit', array('status' => 400));
+    }
+
+    //Get All Questions for this exam
+    $questions = $wpdb->get_results($wpdb->prepare(
+        "SELECT id, correct_choice FROM $questions_table WHERE exam_id = %d",
+        $attempt->exam_id
+    ));
+
+    //Get all answer for this attempt
+    $answers = $wpdb->get_results($wpdb->prepare(
+        "SELECT question_id, student_answer FROM $answers_table WHERE attempt_id = %d",
+        $attempt_id
+    ));
+
+    // Create Answer Lookup
+    $answer_lookup = [];
+    foreach ($answers as $answer) {
+        $answer_lookup[$answer->question_id] = $answer->student_answer;
+    }
+
+
+
+
+}
 }
 
 
