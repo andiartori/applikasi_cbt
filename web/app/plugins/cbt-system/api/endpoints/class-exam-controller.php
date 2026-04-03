@@ -4,26 +4,22 @@
  */
 
 if (!defined('ABSPATH')) {
-    exit; // Exit if accessed directly
+    exit;
 }
 
 class CBT_Exam_Controller {
-    /**
-     * GET / exams - List available exams for a class
-     * Get Specific published exams
-     * Check if exam matches class
-     * check if exam is visible
-     * Check if current time is within exam window time
-     */
 
-    public static function getExams($request) {
+    /**
+     * GET /exams - List available exams for a class
+     */
+    public static function get_exams($request) {
         $class = $request->get_param('class');
         $now = current_time('mysql');
 
-        //Get published exams
+        // Get published exams
         $exams = get_posts([
             'post_type' => 'cbt_exam',
-            'post_per_page' => -1,
+            'posts_per_page' => -1,
             'post_status' => 'publish',
         ]);
 
@@ -31,79 +27,66 @@ class CBT_Exam_Controller {
 
         foreach ($exams as $exam) {
             $exam_class = get_field('exam_class', $exam->ID);
-            $start_time =  get_field('exam_start_time', $exam->ID);
+            $start_time = get_field('exam_start_time', $exam->ID);
             $end_time = get_field('exam_end_time', $exam->ID);
-            $is_visible = get_field('exam_is_visible', $exam->ID);
+            $is_visible = get_field('exam_visible', $exam->ID);
             $duration = get_field('exam_duration', $exam->ID);
             $description = get_field('exam_description', $exam->ID);
 
-            if ($class === $exam_class && $is_visible && $now >= $start_time && $now <= $end_time) {
-                $available_exams[] = [
-                    'id' => $exam->ID,
-                    'title' => $exam->post_title,
-                    'description' => $description,
-                    'duration' => $duration,
-                    'start_time' => $start_time,
-                    'end_time' => $end_time
-                ];
+            // Check if exam matches class
+            if ($exam_class !== $class) {
+                continue;
             }
 
-        if($exam_class !== $class){
-            continue;
-        }
+            // Check if exam is visible
+            if (!$is_visible) {
+                continue;
+            }
 
-        if(!$is_visible){
-            continue;
-        }
+            // Check if current time is within exam window
+            if ($now < $start_time || $now > $end_time) {
+                continue;
+            }
 
-        if($now < $start_time || $now > $end_time){
-            continue;       
-        }
-
-        $available_exams[] = [
-            'id' => $exam->ID,
-            'title' => $exam->post_title,
-            'description' => $description,
-            'duration_minutes' => intval($duration),
-            'start_time' => $start_time,
-            'end_time' => $end_time
-        ];
+            $available_exams[] = [
+                'id' => $exam->ID,
+                'title' => $exam->post_title,
+                'description' => $description,
+                'duration_minutes' => intval($duration),
+                'start_time' => $start_time,
+                'end_time' => $end_time,
+            ];
         }
 
         return rest_ensure_response([
             'success' => true,
-            'data' => $available_exams
+            'data' => $available_exams,
         ]);
     }
 
     /**
-     * GET / exams / {id} - Get details of a specific exam
-     * Get Exam Post per specific ID
-     * Get Necessary ACF Field
-     * Get Questions
-     * Formatiing Answers for response
+     * GET /exam/{id} - Get exam details with questions
      */
-
-    public static function getExam($request) {
+    public static function get_exam($request) {
         global $wpdb;
-
+        
         $exam_id = $request->get_param('id');
         $questions_table = $wpdb->prefix . 'cbt_questions';
 
-        //get exam post
+        // Get exam post
         $exam = get_post($exam_id);
 
         if (!$exam || $exam->post_type !== 'cbt_exam') {
-                return new WP_Error('exam_not_found', ' Ujian tidak ditemukan');
+            return new WP_Error('not_found', 'Ujian tidak ditemukan', ['status' => 404]);
         }
-        
-        //get ACF fields
+
+        // Get ACF fields
         $description = get_field('exam_description', $exam_id);
         $duration = get_field('exam_duration', $exam_id);
         $start_time = get_field('exam_start_time', $exam_id);
         $end_time = get_field('exam_end_time', $exam_id);
 
-        //get questions from custom table
+        // Get questions
         $questions = $wpdb->get_results($wpdb->prepare(
             "SELECT id, question_text, image_url, choice_a, choice_b, choice_c, choice_d, question_order 
              FROM $questions_table 
@@ -112,18 +95,18 @@ class CBT_Exam_Controller {
             $exam_id
         ));
 
-        //get formatted questions
+        // Format questions for response (without correct answers!)
         $formatted_questions = [];
-        foreach ($questions as $question) {
+        foreach ($questions as $q) {
             $formatted_questions[] = [
-                'id' => $question->id,
-                'question_text' => $question->question_text,
-                'image_url' => $question->image_url,
+                'id' => intval($q->id),
+                'question_text' => $q->question_text,
+                'image_url' => $q->image_url,
                 'choices' => [
-                    'a' => $question->choice_a,
-                    'b' => $question->choice_b,
-                    'c' => $question->choice_c,
-                    'd' => $question->choice_d,
+                    'a' => $q->choice_a,
+                    'b' => $q->choice_b,
+                    'c' => $q->choice_c,
+                    'd' => $q->choice_d,
                 ],
             ];
         }
@@ -141,6 +124,5 @@ class CBT_Exam_Controller {
                 'questions' => $formatted_questions,
             ],
         ]);
-
-    } 
+    }
 }

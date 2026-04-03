@@ -77,7 +77,7 @@ class CBT_Database
         submitted_at DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
-        KEY student_idx (student_id),
+        KEY student_nisn_idx (student_nisn),
         KEY exam_idx (exam_id),
         KEY submission_idx (is_submitted),
         UNIQUE KEY nisn_exam_unique (student_nisn, exam_id)
