@@ -68,6 +68,7 @@ class CBT_Database
         student_name VARCHAR(255) NOT NULL,
         student_class VARCHAR(100) NOT NULL,
         student_nisn VARCHAR(20) NOT NULL,
+        token VARCHAR(100) DEFAULT NULL,
         start_time DATETIME NOT NULL,
         end_time DATETIME,
         score DECIMAL(5,2) DEFAULT NULL,
