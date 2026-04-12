@@ -24,6 +24,7 @@ require_once CBT_SYSTEM_PLUGIN_DIR . 'includes/class-cbt-database.php';
 require_once CBT_SYSTEM_PLUGIN_DIR . 'includes/class-cbt-roles.php';
 require_once CBT_SYSTEM_PLUGIN_DIR . 'includes/class-cbt-activator.php';
 require_once CBT_SYSTEM_PLUGIN_DIR . 'includes/class-cbt-acf-fields.php';
+require_once CBT_SYSTEM_PLUGIN_DIR . 'api/class-cbt-api.php';
 
 // Set ACF JSON save/load point for this plugin
 add_filter('acf/settings/save_json', fn() => CBT_SYSTEM_PLUGIN_DIR . 'acf-json');
@@ -77,4 +78,6 @@ add_action('init', function() {
     if(is_admin()) {
         CBT_Admin::init();
     }   
+
+    CBT_API::init();
 });

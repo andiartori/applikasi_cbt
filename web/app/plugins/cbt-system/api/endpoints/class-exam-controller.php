@@ -44,9 +44,9 @@ class CBT_Exam_Controller {
             }
 
             // Check if current time is within exam window
-            if ($now < $start_time || $now > $end_time) {
-                continue;
-            }
+            // if ($now < $start_time || $now > $end_time) {
+            //     continue;
+            // }
 
             $available_exams[] = [
                 'id' => $exam->ID,
